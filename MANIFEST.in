@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include nxm_better_list_view *.css
+recursive-include nxm_better_list_view *.csv
+recursive-include nxm_better_list_view *.html
+recursive-include nxm_better_list_view *.ico
+recursive-include nxm_better_list_view *.js
+recursive-include nxm_better_list_view *.json
+recursive-include nxm_better_list_view *.md
+recursive-include nxm_better_list_view *.png
+recursive-include nxm_better_list_view *.py
+recursive-include nxm_better_list_view *.svg
+recursive-include nxm_better_list_view *.txt
+recursive-exclude nxm_better_list_view *.pyc

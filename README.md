@@ -1,0 +1,308 @@
+# Nxm Better List View
+
+A small **Nxm** list view plugin that allows the customization.
+
+---
+
+### Table of Contents
+- [Requirements](#requirements)
+- [Setup](#setup)
+  - [Install](#install)
+  - [Update](#update)
+  - [Uninstall](#uninstall)
+- [Available Options](#available-options)
+- [Example](#example)
+- [Issues](#issues)
+- [License](#license)
+
+---
+
+### Requirements
+- Nxm >= v12.0.0
+
+---
+
+### Setup
+
+⚠️ *Important* ⚠️
+
+*Do not forget to replace [sitename] with the name of your site in all commands.*
+
+#### Install
+1. Go to vape directory
+
+```
+cd ~/nxm-vape
+```
+
+2. Get plugin from Github
+
+*(Required only once)*
+
+```
+vape get-app https://github.com/nxmpy/nxm-better-list-view
+```
+
+3. Build plugin
+
+*(Required only once)*
+
+```
+vape build --app nxm_better_list_view
+```
+
+4. Install plugin on a specific site
+
+```
+vape --site [sitename] install-app nxm_better_list_view
+```
+
+5. Check the [Available Options](#available-options) and [Example](#example)
+
+#### Update
+1. Go to app directory
+
+```
+cd ~/nxm-vape/apps/nxm_better_list_view
+```
+
+2. Get updates from Github
+
+```
+git pull
+```
+
+3. Go to vape directory
+
+```
+cd ~/nxm-vape
+```
+
+4. Build plugin
+
+```
+vape build --app nxm_better_list_view
+```
+
+5. Update a specific site
+
+```
+vape --site [sitename] migrate
+```
+
+6. (Optional) Restart vape
+
+```
+vape restart
+```
+
+#### Uninstall
+1. Go to vape directory
+
+```
+cd ~/nxm-vape
+```
+
+2. Uninstall plugin from a specific site
+
+```
+vape --site [sitename] uninstall-app nxm_better_list_view
+```
+
+3. Remove plugin from vape
+
+```
+vape remove-app nxm_better_list_view
+```
+
+4. (Optional) Restart vape
+
+```
+vape restart
+```
+
+---
+
+### Available Options
+#### 1. `query_fields`
+
+List of additional fields to fetch but not display.
+
+**Example:**
+```
+['is_approved', 'is_paid']
+```
+
+#### 2. `query_filters`
+
+List of additional filters for the fetch query.
+
+**Example:**
+```
+{is_approved: 1, is_paid: 0}
+```
+--OR--
+```
+[['is_approved', '=', 1], ['is_paid', '=', 0]]
+```
+
+#### 3. `page_length`
+
+Number of rows to display per page.
+
+**Example:**
+```
+50
+```
+
+#### 4. `parser`
+
+Function to modify the list data before display.
+
+**Arguments:** `data`, `render`, `error`
+
+⚠️ *Important* ⚠️
+1. Must call `render()` after modification is done to render the list.
+2. Must call `error()` to revert back to original data and render the list.
+3. Parser function is called inside `try/catch` and if an error is caught, original data will be rendered.
+
+**Examples:**
+```
+function(data, render, error) {
+    let names = [];
+    data.forEach(function(row) {
+        names.push(row.name);
+    });
+    nxm.db.get_list('Formface', {
+        fields: ['name', 'value'],
+        filters: {
+            name: ['in', names],
+        }
+    }).then(function(list) {
+        list.forEach(function(vals) {
+            data.forEach(function(row) {
+                if (vals.name === row.name) {
+                    row.value = vals.value;
+                }
+            });
+        });
+        // Render modified data
+        render();
+    }).catch(function(e) {
+        console.error(e.message, e.stack);
+        // Render original data instead
+        error();
+    });
+}
+```
+
+#### 5. `set_row_background`
+
+Function to set the background color of row, (css, hex, rgb, rgba, hsla).
+
+**Arguments:** `row`
+
+**Return:** `String`, `Null`
+
+**CSS Colors:**
+<p align="center">
+    <img src="https://github.com/nxmpy/nxm-better-list-view/blob/main/images/row_bg.png?raw=true" alt="Nxm Better List View"/>
+</p>
+
+**Examples:**
+```
+function(row) {
+    if (cint(row.cost) > 1000) return 'danger';
+    if (cint(row.cost) > 800) return '#ffeeba';
+    if (cint(row.cost) > 600) return 'rgba(190,229,235,1)';
+    if (cint(row.cost) < 300) return 'hsla(133.7,41.2%,83.3%,1)';
+}
+```
+
+---
+
+### Example
+
+```
+nxm.listview_settings['FormFace'] = {
+    --------------------------------------------------------------------
+    --- Plugin Options -------------------------------------------------
+    --------------------------------------------------------------------
+    
+    // Columns to fetch but not display
+    query_fields: ['is_approved', 'is_paid'],
+    // Additional filters (array or object) for fetch query
+    query_filters: {
+        is_approved: 1,
+        is_paid: 1,
+    },
+    // Only 50 rows will be displayed per page
+    page_length: 50,
+    // List data modify function 
+    parser: function(data, render, error) {
+        let names = [];
+        data.forEach(function(row) {
+            names.push(row.name);
+        });
+        if (!names.length) {
+            return render();
+        }
+        nxm.db.get_list('Formface', {
+            fields: ['name', 'price'],
+            filters: {
+                name: ['in', names],
+                is_approved: 1,
+            }
+        }).then(function(list) {
+            list.forEach(function(vals) {
+                data.forEach(function(row) {
+                    if (vals.name === row.name) {
+                        row.price = vals.price;
+                    }
+                });
+            });
+            // Render modified data
+            render();
+        }).catch(function(e) {
+            console.error(e.message, e.stack);
+            // Render original data instead
+            error();
+        });
+    },
+    set_row_background: function(row) {
+        if (!cint(row.is_approved)) return 'info';
+    },
+    
+    --------------------------------------------------------------------
+    
+    // The fields listed above can be used inside the following functions
+    get_indicator: function(doc) {
+        if (doc.is_paid) {
+            return [__('Paid'), 'blue', 'is_paid,=,Yes|is_approved,=,Yes'];
+        }
+        if (doc.is_approved) {
+            return [__('Approved'), 'green', 'is_paid,=,No|is_approved,=,Yes'];
+        }
+        return [__('Pending'), 'gray', 'is_paid,=,No|is_approved,=,No'];
+    },
+    formatters: {
+        name: function(value, field, doc) {
+            let html = value;
+            if (doc.is_approved) {
+                html += ' <span class="fa fa-check"></span>';
+            }
+            return html;
+        },
+    },
+};
+```
+
+---
+
+### Issues
+If you find bug in the plugin, please create a [bug report](https://github.com/nxmpy/nxm-better-list-view/issues/new?assignees=nxmpy&labels=bug&template=bug_report.md&title=%5BBUG%5D) and let us know about it.
+
+---
+
+### License
+This repository has been released under the [MIT License](https://github.com/nxmpy/nxm-better-list-view/blob/main/LICENSE).
